@@ -1,16 +1,13 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Simple in-memory rate limit for the edge (Note: Resets on cold start)
-// For high-scale production, we would use Redis (Upstash)
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
 
-export function middleware(request: NextRequest) {
-  // Only apply to our API relay routes
+export default function proxy(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api/v1/')) {
     const ip = request.ip || '127.0.0.1';
-    const limit = 60; // Max requests per window
-    const windowMs = 60 * 1000; // 1 minute window
+    const limit = 60; 
+    const windowMs = 60 * 1000; 
 
     const now = Date.now();
     const rateLimitData = rateLimitMap.get(ip);
@@ -19,7 +16,6 @@ export function middleware(request: NextRequest) {
       rateLimitMap.set(ip, { count: 1, lastReset: now });
     } else {
       if (now - rateLimitData.lastReset > windowMs) {
-        // Reset window
         rateLimitData.count = 1;
         rateLimitData.lastReset = now;
       } else {
@@ -43,7 +39,6 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Ensure middleware only runs on API routes for performance
 export const config = {
   matcher: '/api/v1/:path*',
 };
